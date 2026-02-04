@@ -1,0 +1,117 @@
+services:
+
+  elasticsearch:
+    container_name: senzing-elasticsearch
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
+      xpack.security.enabled: 'false'
+    image: elasticsearch:${SENZING_DOCKER_IMAGE_VERSION_ELASTICSEARCH:-9.3.0}
+    logging:
+      driver: json-file
+    networks:
+      - senzing
+    ports:
+      - 9200:9200
+      - 9300:9300
+    restart: always
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
+  logstash:
+    command:
+      - --config.string
+      - >-
+        input {
+          gelf {
+            port => 12201
+          }
+        }
+        output {
+          elasticsearch {
+            hosts => ["http://senzing-elasticsearch:9200"]
+            index => "log-%{+YYYY.MM.dd}"
+            data_stream => false
+          }
+        }
+    container_name: senzing-logstash
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    image: logstash:${SENZING_DOCKER_IMAGE_VERSION_LOGSTASH:-9.3.0}
+    logging:
+      driver: json-file
+    networks:
+      - senzing
+    ports:
+      - 9600:9600
+      - 12201:12201/udp
+    restart: always
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    container_name: senzing-kibana
+    depends_on:
+      - elasticsearch
+      - logstash
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://senzing-elasticsearch:9200"]'
+    image: kibana:${SENZING_DOCKER_IMAGE_VERSION_KIBANA:-9.3.0}
+    networks:
+      - senzing
+    ports:
+      - 5601:5601
+    restart: always
+
+  kibana-dashboard:
+    container_name: senzing-kibana-dashboard
+    depends_on:
+      - kibana
+    command:
+      - sh
+      - -c
+      - |
+        # Wait for Kibana to be ready
+        until curl -s http://senzing-kibana:5601/api/status >/dev/null; do
+          echo "Waiting for Kibana..."
+          sleep 2
+        done
+
+        # Import dashboard objects
+        cat > /tmp/kibana-objects.ndjson << 'EOF'
+        {"attributes":{"fieldAttrs":"{\"@timestamp\":{\"count\":5},\"container_name\":{\"count\":4},\"message\":{\"count\":6},\"source_host\":{\"count\":2}}","fields":"[]","runtimeFieldMap":"{}","timeFieldName":"@timestamp","title":"log*","typeMeta":"{}"},"coreMigrationVersion":"8.8.0","id":"868351a0-e102-11ec-abf1-5991269c961f","migrationVersion":{"index-pattern":"7.11.0"},"references":[],"type":"index-pattern","updated_at":"2026-02-04T10:49:38.816Z","version":"Wzc5LDNd"}
+        {"attributes":{"title":"Error Logs","columns":["@timestamp","message","container_name","source_host"],"sort":[["@timestamp","desc"]],"kibanaSavedObjectMeta":{"searchSourceJSON":"{\"query\":{\"query\":\"message: (*error* OR *Error* OR *ERROR* OR *fail* OR *exception*)\",\"language\":\"kuery\"},\"filter\":[],\"indexRefName\":\"tab_2ac2e9bd-a30b-509d-988f-ab949cceb794.kibanaSavedObjectMeta.searchSourceJSON.index\"}"},"description":"","tabs":[{"id":"2ac2e9bd-a30b-509d-988f-ab949cceb794","label":"Untitled","attributes":{"sort":[["@timestamp","desc"]],"columns":["@timestamp","message","container_name","source_host"],"grid":{"columns":{"container_name":{"width":150},"source_host":{"width":120}}},"hideChart":false,"isTextBasedQuery":false,"kibanaSavedObjectMeta":{"searchSourceJSON":"{\"query\":{\"query\":\"message: (*error* OR *Error* OR *ERROR* OR *fail* OR *exception*)\",\"language\":\"kuery\"},\"filter\":[],\"indexRefName\":\"tab_2ac2e9bd-a30b-509d-988f-ab949cceb794.kibanaSavedObjectMeta.searchSourceJSON.index\"}"},"timeRestore":false}}],"grid":{"columns":{"container_name":{"width":150},"source_host":{"width":120}}},"hideChart":false,"isTextBasedQuery":false,"timeRestore":false},"coreMigrationVersion":"8.8.0","id":"1f211439-b386-411b-872a-833126886750","migrationVersion":{"search":"7.9.0"},"references":[{"name":"tab_2ac2e9bd-a30b-509d-988f-ab949cceb794.kibanaSavedObjectMeta.searchSourceJSON.index","type":"index-pattern","id":"868351a0-e102-11ec-abf1-5991269c961f"}],"type":"search","updated_at":"2026-02-04T11:26:18.515Z","version":"WzExNCwzXQ=="}
+        {"attributes":{"title":"Workload Statistics","columns":["@timestamp","message","container_name","source_host"],"sort":[["@timestamp","desc"]],"kibanaSavedObjectMeta":{"searchSourceJSON":"{\"query\":{\"query\":\"message: *workload*\",\"language\":\"kuery\"},\"filter\":[],\"indexRefName\":\"tab_5095b6ac-67d8-52ad-b3bc-e6eb1ed3e8f8.kibanaSavedObjectMeta.searchSourceJSON.index\"}"},"description":"","tabs":[{"id":"5095b6ac-67d8-52ad-b3bc-e6eb1ed3e8f8","label":"Untitled","attributes":{"sort":[["@timestamp","desc"]],"columns":["@timestamp","message","container_name","source_host"],"grid":{"columns":{"container_name":{"width":150},"source_host":{"width":120}}},"hideChart":false,"isTextBasedQuery":false,"kibanaSavedObjectMeta":{"searchSourceJSON":"{\"query\":{\"query\":\"message: *workload*\",\"language\":\"kuery\"},\"filter\":[],\"indexRefName\":\"tab_5095b6ac-67d8-52ad-b3bc-e6eb1ed3e8f8.kibanaSavedObjectMeta.searchSourceJSON.index\"}"},"timeRestore":false}}],"grid":{"columns":{"container_name":{"width":150},"source_host":{"width":120}}},"hideChart":false,"isTextBasedQuery":false,"timeRestore":false},"coreMigrationVersion":"8.8.0","id":"e2649f60-f5e6-4b0d-a369-e70614d81033","migrationVersion":{"search":"7.9.0"},"references":[{"name":"tab_5095b6ac-67d8-52ad-b3bc-e6eb1ed3e8f8.kibanaSavedObjectMeta.searchSourceJSON.index","type":"index-pattern","id":"868351a0-e102-11ec-abf1-5991269c961f"}],"type":"search","updated_at":"2026-02-04T11:26:39.668Z","version":"WzExOCwzXQ=="}
+        {"attributes":{"title":"All Recent Logs","columns":["@timestamp","message","container_name","source_host"],"sort":[["@timestamp","desc"]],"kibanaSavedObjectMeta":{"searchSourceJSON":"{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[],\"indexRefName\":\"tab_d75ee16d-2647-5c0a-baa3-0c4ffc8b192c.kibanaSavedObjectMeta.searchSourceJSON.index\"}"},"description":"","tabs":[{"id":"d75ee16d-2647-5c0a-baa3-0c4ffc8b192c","label":"Untitled","attributes":{"sort":[["@timestamp","desc"]],"columns":["@timestamp","message","container_name","source_host"],"grid":{"columns":{"container_name":{"width":150},"source_host":{"width":120}}},"hideChart":false,"isTextBasedQuery":false,"kibanaSavedObjectMeta":{"searchSourceJSON":"{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[],\"indexRefName\":\"tab_d75ee16d-2647-5c0a-baa3-0c4ffc8b192c.kibanaSavedObjectMeta.searchSourceJSON.index\"}"},"timeRestore":false}}],"grid":{"columns":{"container_name":{"width":150},"source_host":{"width":120}}},"hideChart":false,"isTextBasedQuery":false,"timeRestore":false},"coreMigrationVersion":"8.8.0","id":"9b01d74e-a719-4216-abd6-42447c9e7549","migrationVersion":{"search":"7.9.0"},"references":[{"name":"tab_d75ee16d-2647-5c0a-baa3-0c4ffc8b192c.kibanaSavedObjectMeta.searchSourceJSON.index","type":"index-pattern","id":"868351a0-e102-11ec-abf1-5991269c961f"}],"type":"search","updated_at":"2026-02-04T11:27:35.332Z","version":"WzEyNSwzXQ=="}
+        {"attributes":{"description":"","title":"Senzing Dashboard","controlGroupInput":{"chainingSystem":"HIERARCHICAL","controlStyle":"oneLine","showApplySelections":false,"ignoreParentSettingsJSON":"{\"ignoreFilters\":false,\"ignoreQuery\":false,\"ignoreTimerange\":false,\"ignoreValidations\":false}","panelsJSON":"{}"},"optionsJSON":"{\"hidePanelTitles\":false,\"useMargins\":true,\"syncColors\":false,\"syncCursor\":true,\"syncTooltips\":false}","panelsJSON":"[{\"type\":\"search\",\"embeddableConfig\":{},\"panelIndex\":\"aeecaed5-62f4-45e5-8ccc-24d222710e62\",\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":15,\"i\":\"aeecaed5-62f4-45e5-8ccc-24d222710e62\"}},{\"type\":\"search\",\"embeddableConfig\":{},\"panelIndex\":\"6bb330a6-0fff-48a7-a809-1ca528a34352\",\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":15,\"i\":\"6bb330a6-0fff-48a7-a809-1ca528a34352\"}},{\"type\":\"search\",\"embeddableConfig\":{},\"panelIndex\":\"abe91a7b-7eb7-40fe-860e-c2c16cfa2185\",\"gridData\":{\"x\":0,\"y\":15,\"w\":24,\"h\":15,\"i\":\"abe91a7b-7eb7-40fe-860e-c2c16cfa2185\"}}]","timeRestore":false,"kibanaSavedObjectMeta":{"searchSourceJSON":"{\"query\":{\"query\":\"\",\"language\":\"kuery\"}}"}},"coreMigrationVersion":"8.8.0","id":"e37f3b7d-3081-41e4-a9af-01b97c340e14","migrationVersion":{"dashboard":"7.3.0"},"references":[{"name":"aeecaed5-62f4-45e5-8ccc-24d222710e62:savedObjectRef","type":"search","id":"1f211439-b386-411b-872a-833126886750"},{"name":"6bb330a6-0fff-48a7-a809-1ca528a34352:savedObjectRef","type":"search","id":"e2649f60-f5e6-4b0d-a369-e70614d81033"},{"name":"abe91a7b-7eb7-40fe-860e-c2c16cfa2185:savedObjectRef","type":"search","id":"9b01d74e-a719-4216-abd6-42447c9e7549"}],"type":"dashboard","updated_at":"2026-02-04T11:16:53.556Z","version":"Wzk0LDNd"}
+        {"exportedCount":5,"missingRefCount":0,"missingReferences":[]}
+        EOF
+
+        # Retry import until successful
+        while true; do
+          status_code=$(curl -X POST "http://senzing-kibana:5601/api/saved_objects/_import" \
+            -H "kbn-xsrf: true" \
+            --form file=@/tmp/kibana-objects.ndjson \
+            --write-out "%{http_code}" \
+            --silent --output /dev/null)
+
+          if [[ "$status_code" -ne 200 ]]; then
+            echo "Import failed with status $status_code, retrying in 1 second..."
+            sleep 1
+          else
+            echo "Dashboard import successful"
+            exit 0
+          fi
+        done
+    image: curlimages/curl:${SENZING_DOCKER_IMAGE_VERSION_CURLIMAGES_CURL:-latest}
+    networks:
+      - senzing
+    user: root
+
+networks:
+  senzing:
+    name: ${SENZING_DOCKER_NETWORK:-senzing}
+
+volumes:
+  elasticsearch-data:
+    driver: local

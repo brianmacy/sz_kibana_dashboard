@@ -1,0 +1,160 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint YAML files
+        run: yamllint -c .yamllint kibana.yaml
+
+      - name: Validate Docker Compose
+        run: docker compose -f kibana.yaml config --quiet
+
+  markdown-lint:
+    name: Lint Markdown
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Markdown lint
+        uses: DavidAnson/markdownlint-cli2-action@v18
+        with:
+          globs: '*.md'
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start ELK stack
+        run: docker compose -f kibana.yaml up -d
+
+      - name: Wait for Elasticsearch
+        run: |
+          timeout=120
+          elapsed=0
+          while ! curl -s http://localhost:9200/_cluster/health | grep -q '"status":"green\|yellow"'; do
+            if [ $elapsed -ge $timeout ]; then
+              echo "Elasticsearch failed to start within ${timeout}s"
+              docker compose -f kibana.yaml logs
+              exit 1
+            fi
+            echo "Waiting for Elasticsearch... (${elapsed}s/${timeout}s)"
+            sleep 5
+            elapsed=$((elapsed + 5))
+          done
+          echo "Elasticsearch is ready"
+
+      - name: Wait for Kibana
+        run: |
+          timeout=120
+          elapsed=0
+          while ! curl -s http://localhost:5601/api/status | grep -q '"level":"available"'; do
+            if [ $elapsed -ge $timeout ]; then
+              echo "Kibana failed to start within ${timeout}s"
+              docker compose -f kibana.yaml logs kibana
+              exit 1
+            fi
+            echo "Waiting for Kibana... (${elapsed}s/${timeout}s)"
+            sleep 5
+            elapsed=$((elapsed + 5))
+          done
+          echo "Kibana is ready"
+
+      - name: Verify Logstash
+        run: |
+          timeout=60
+          elapsed=0
+          while ! curl -s http://localhost:9600 | grep -q '"status":"green"'; do
+            if [ $elapsed -ge $timeout ]; then
+              echo "Logstash failed to start within ${timeout}s"
+              docker compose -f kibana.yaml logs logstash
+              exit 1
+            fi
+            echo "Waiting for Logstash... (${elapsed}s/${timeout}s)"
+            sleep 5
+            elapsed=$((elapsed + 5))
+          done
+          echo "Logstash is ready"
+
+      - name: Wait for dashboard import
+        run: |
+          timeout=60
+          elapsed=0
+          while docker compose -f kibana.yaml ps kibana-dashboard | grep -q "running"; do
+            if [ $elapsed -ge $timeout ]; then
+              echo "Dashboard import timed out"
+              docker compose -f kibana.yaml logs kibana-dashboard
+              exit 1
+            fi
+            echo "Waiting for dashboard import... (${elapsed}s/${timeout}s)"
+            sleep 2
+            elapsed=$((elapsed + 2))
+          done
+
+          # Check exit code
+          exit_code=$(docker compose -f kibana.yaml ps kibana-dashboard --format json | grep -o '"ExitCode":[0-9]*' | cut -d: -f2)
+          if [ "$exit_code" != "0" ]; then
+            echo "Dashboard import failed with exit code $exit_code"
+            docker compose -f kibana.yaml logs kibana-dashboard
+            exit 1
+          fi
+          echo "Dashboard imported successfully"
+
+      - name: Verify dashboard exists
+        run: |
+          # Check if Senzing Dashboard exists
+          response=$(curl -s "http://localhost:5601/api/saved_objects/dashboard/e37f3b7d-3081-41e4-a9af-01b97c340e14")
+          if ! echo "$response" | grep -q '"title":"Senzing Dashboard"'; then
+            echo "Senzing Dashboard not found"
+            echo "$response"
+            exit 1
+          fi
+          echo "Senzing Dashboard verified"
+
+      - name: Test GELF log ingestion
+        run: |
+          # Send a test GELF message
+          echo '{"version":"1.1","host":"test-host","short_message":"Test log message","level":6,"_container_name":"test-container"}' | \
+            nc -u -w1 localhost 12201
+
+          # Wait for log to be indexed
+          sleep 10
+
+          # Search for the test message
+          response=$(curl -s "http://localhost:9200/log-*/_search?q=message:Test")
+          if ! echo "$response" | grep -q '"hits":{"total":{"value":[1-9]'; then
+            echo "Test log message not found in Elasticsearch"
+            echo "$response"
+            exit 1
+          fi
+          echo "GELF log ingestion verified"
+
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose -f kibana.yaml logs
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f kibana.yaml down -v

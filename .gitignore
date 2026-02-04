@@ -1,0 +1,54 @@
+# Docker volumes and data
+elasticsearch-data/
+
+# Logs
+*.log
+elk-logs.txt
+cluster-health.json
+docker-stats.txt
+indices.txt
+nodes.txt
+ports.txt
+disk-usage.txt
+memory-usage.txt
+
+# Secrets and environment files
+.env
+*.env
+secrets/
+certs/*.key
+certs/*.p12
+certs/*.jks
+
+# Backup files
+backup/
+*.backup
+elasticsearch-backup/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# Temporary files
+*.tmp
+tmp/
+temp/
+.cache/
+
+# Test outputs
+test-results/
+coverage/
+
+# Dashboard exports (except the embedded one)
+dashboard-export.ndjson
+senzing-dashboard.ndjson
