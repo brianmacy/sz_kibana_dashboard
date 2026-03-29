@@ -37,7 +37,7 @@ Before submitting a bug report:
 
 Create an issue with the following information:
 
-```markdown
+````markdown
 ## Bug Description
 [Clear description of the bug]
 
@@ -66,7 +66,7 @@ Create an issue with the following information:
 
 ## Additional Context
 [Any other relevant information]
-```
+````
 
 ### Suggesting Enhancements
 
@@ -116,12 +116,14 @@ Documentation improvements are always appreciated:
 1. **Fork the repository**
 
 2. **Clone your fork**
+
    ```bash
    git clone https://github.com/YOUR-USERNAME/sz_kibana_dashboard.git
    cd sz_kibana_dashboard
    ```
 
 3. **Create a feature branch**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -129,6 +131,7 @@ Documentation improvements are always appreciated:
 4. **Make your changes**
 
 5. **Test locally**
+
    ```bash
    # Validate configuration
    docker compose -f kibana.yaml config --quiet
@@ -150,6 +153,7 @@ Documentation improvements are always appreciated:
 - Use 2 spaces for indentation
 - Keep lines under 200 characters where possible
 - Pass yamllint validation:
+
   ```bash
   yamllint -c .yamllint kibana.yaml
   ```
@@ -159,9 +163,11 @@ Documentation improvements are always appreciated:
 - Use clear, concise language
 - Include code examples where appropriate
 - Pass markdownlint validation:
+
   ```bash
   markdownlint *.md
   ```
+
 - Add table of contents for documents > 100 lines
 - Use consistent heading levels
 
@@ -227,7 +233,7 @@ Documentation improvements are always appreciated:
 
 Follow conventional commits format:
 
-```
+```text
 type(scope): subject
 
 body
@@ -236,6 +242,7 @@ footer
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -246,7 +253,7 @@ footer
 
 **Examples:**
 
-```
+```text
 feat(dashboard): add network traffic visualization panel
 
 Add a new panel to the Senzing Dashboard showing network traffic
@@ -255,7 +262,7 @@ statistics for better monitoring of GELF log ingestion rates.
 Closes #123
 ```
 
-```
+```text
 fix(elasticsearch): increase default heap size to 512MB
 
 Previous 256MB default was too low for production workloads,
@@ -264,7 +271,7 @@ causing OOM errors. Increased to 512MB for better stability.
 Fixes #456
 ```
 
-```
+```text
 docs(security): add TLS/SSL configuration examples
 
 Added step-by-step guide for enabling TLS/SSL encryption
@@ -278,6 +285,7 @@ on all ELK components.
 Before submitting a PR, test the following:
 
 1. **Clean Deployment**
+
    ```bash
    docker compose -f kibana.yaml up -d
    # Verify all services start
@@ -290,6 +298,7 @@ Before submitting a PR, test the following:
    ```
 
 2. **Dashboard Verification**
+
    ```bash
    # Start stack
    docker compose -f kibana.yaml up -d
@@ -300,6 +309,7 @@ Before submitting a PR, test the following:
    ```
 
 3. **Log Ingestion Test**
+
    ```bash
    # Send test GELF message
    echo '{"version":"1.1","host":"test","short_message":"Test log","level":6,"_container_name":"test"}' | nc -u localhost 12201
@@ -348,6 +358,7 @@ CI/CD tests run automatically on PR submission (see `.github/workflows/ci.yml`):
 ### Code Examples
 
 Always include:
+
 - Context (what the example does)
 - Complete, working code
 - Expected output (where relevant)

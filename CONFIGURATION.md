@@ -64,7 +64,7 @@ docker compose -f kibana.yaml up -d
 
 Dependencies ensure proper startup order:
 
-```
+```text
 elasticsearch (no dependencies)
   ↓
 logstash (depends on elasticsearch)
@@ -124,6 +124,7 @@ elasticsearch:
 - **16GB+ RAM**: `-Xmx4g -Xms4g`
 
 **Rules:**
+
 - Set Xmx and Xms to the same value (prevents heap resizing)
 - Don't exceed 50% of system RAM
 - Leave room for OS, other services, and Lucene file system cache
@@ -208,7 +209,7 @@ logstash:
       }
 ```
 
-### Memory Settings
+### Logstash Memory Settings
 
 Default heap size: 256MB
 
@@ -219,6 +220,7 @@ logstash:
 ```
 
 **Recommendations:**
+
 - **Light workload (<1000 events/sec)**: 256MB (default)
 - **Medium workload (1000-5000 events/sec)**: 512MB
 - **Heavy workload (>5000 events/sec)**: 1GB+
@@ -458,7 +460,7 @@ networks:
 **Default ports:**
 
 | Service | Internal Port | External Port | Protocol |
-|---------|---------------|---------------|----------|
+| ------- | ------------- | ------------- | -------- |
 | Elasticsearch | 9200 | 9200 | TCP |
 | Elasticsearch Transport | 9300 | 9300 | TCP |
 | Logstash GELF | 12201 | 12201 | UDP |
@@ -688,6 +690,7 @@ done
 ```
 
 Add to cron:
+
 ```bash
 # Run daily at 2 AM
 0 2 * * * /path/to/cleanup-old-logs.sh >> /var/log/elk-cleanup.log 2>&1

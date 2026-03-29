@@ -44,7 +44,7 @@ This deployment provides:
 
 ## Architecture
 
-```
+```text
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │  Remote Machine │    │  Remote Machine │    │       ...       │
 │  192.168.2.151  │    │  192.168.2.142  │    │                 │
@@ -70,7 +70,7 @@ This deployment provides:
 ### Components
 
 | Component | Version | Purpose | Ports |
-|-----------|---------|---------|-------|
+| --------- | ------- | ------- | ----- |
 | **Elasticsearch** | 9.3.0 | Log storage and indexing | 9200, 9300 |
 | **Logstash** | 9.3.0 | Log ingestion and processing | 12201 (UDP), 9600 |
 | **Kibana** | 9.3.0 | Web UI and dashboards | 5601 |
@@ -81,12 +81,14 @@ This deployment provides:
 ### Prerequisites
 
 **Required:**
+
 - Docker Engine 20.10+ ([Install Docker](https://docs.docker.com/get-docker/))
 - Docker Compose 2.0+ ([Install Compose](https://docs.docker.com/compose/install/))
 - 2GB+ available RAM (4GB+ recommended)
 - 10GB+ free disk space
 
 **Verify installation:**
+
 ```bash
 docker --version
 # Docker version 24.0.0, build ...
@@ -96,24 +98,28 @@ docker compose version
 ```
 
 **Network requirements:**
+
 - Ports 12201/udp (GELF) and 5601/tcp (Kibana) accessible from remote machines
 - Firewall rules allowing traffic between ELK server and remote machines
 
 ### Deployment
 
 1. **Clone or download this repository**
+
    ```bash
    git clone https://github.com/YOUR-ORG/sz_kibana_dashboard.git
    cd sz_kibana_dashboard
    ```
 
 2. **Deploy the ELK stack**
+
    ```bash
    docker compose -f kibana.yaml up -d
    ```
 
    **Expected output:**
-   ```
+
+   ```text
    [+] Running 5/5
    ✔ Network senzing                 Created
    ✔ Container senzing-elasticsearch Started
@@ -123,6 +129,7 @@ docker compose version
    ```
 
 3. **Verify deployment**
+
    ```bash
    # Check service status
    docker compose -f kibana.yaml ps
@@ -135,7 +142,7 @@ docker compose version
    ```
 
 4. **Access Kibana Dashboard**
-   - Open browser to: **http://192.168.2.100:5601** (or http://localhost:5601)
+   - Open browser to: **<http://192.168.2.100:5601>** (or <http://localhost:5601>)
    - Navigate to: **Dashboard → "Senzing Dashboard"**
 
 ### Configure Remote Machines
@@ -154,6 +161,7 @@ services:
 ```
 
 **Test log ingestion:**
+
 ```bash
 # Send a test message from remote machine
 echo '{"version":"1.1","host":"test","short_message":"Test log","level":6,"_container_name":"test"}' | \
@@ -184,7 +192,7 @@ curl -s "http://localhost:9200/log-*/_search?size=1&sort=@timestamp:desc&pretty"
 Memory allocation by component:
 
 | Component | Min RAM | Recommended RAM | Heavy Load |
-|-----------|---------|-----------------|------------|
+| --------- | ------- | --------------- | ---------- |
 | Elasticsearch | 512MB | 1-2GB | 4GB+ |
 | Logstash | 256MB | 512MB | 1GB+ |
 | Kibana | 256MB | 512MB | 1GB |
@@ -197,16 +205,19 @@ See [CONFIGURATION.md](CONFIGURATION.md) for tuning guidelines.
 The **Senzing Dashboard** includes three pre-configured panels in a 2x2 grid layout:
 
 ### 1. Error Logs (Top-Left)
+
 - **Filter**: `message: (*error* OR *Error* OR *ERROR* OR *fail* OR *exception*)`
 - **Purpose**: Catch all error messages and failures
 - **Columns**: `@timestamp`, `message`, `container_name`, `source_host`
 
 ### 2. Workload Statistics (Top-Right)
+
 - **Filter**: `message: *workload*`
 - **Purpose**: Monitor workload processing statistics
 - **Example**: "Processed 1730000 adds, 112 records per second"
 
 ### 3. All Recent Logs (Bottom)
+
 - **Filter**: None (all logs)
 - **Purpose**: Complete log stream, most recent first
 - **Sort**: `@timestamp desc`
@@ -356,7 +367,7 @@ docker stats --no-stream
 ### Common Issues
 
 | Problem | Solution |
-|---------|----------|
+| ------- | -------- |
 | Services won't start | Check available RAM and disk space |
 | No logs appearing | Verify GELF configuration and network connectivity |
 | Dashboard not loading | Check Kibana logs and verify Elasticsearch health |
@@ -411,6 +422,7 @@ Update NDJSON in `kibana.yaml` (lines 81-88) and redeploy.
 ### High Availability
 
 For production deployments with HA:
+
 - Deploy Elasticsearch cluster (3+ nodes)
 - Load balance Kibana (2+ instances)
 - Deploy multiple Logstash instances
@@ -427,14 +439,15 @@ For production deployments with HA:
 ### Support Channels
 
 - **GitHub Issues**: Report bugs or request features
-- **Elasticsearch Forums**: https://discuss.elastic.co
-- **Docker Forums**: https://forums.docker.com
+- **Elasticsearch Forums**: <https://discuss.elastic.co>
+- **Docker Forums**: <https://forums.docker.com>
 
 ### Before Asking for Help
 
 1. Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 2. Search existing GitHub issues
 3. Collect debug information:
+
    ```bash
    docker compose -f kibana.yaml logs > elk-logs.txt
    curl -s "http://localhost:9200/_cluster/health?pretty" > cluster-health.json
@@ -469,6 +482,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 **Active Development** - This project is actively maintained and welcomes contributions.
 
 **Tested With:**
+
 - Elasticsearch 9.3.0
 - Logstash 9.3.0
 - Kibana 9.3.0

@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Docker-based ELK (Elasticsearch, Logstash, Kibana) stack deployment for centralized log collection and monitoring of Senzing applications across multiple machines. The stack collects GELF logs from remote Docker containers via UDP and provides pre-configured Kibana dashboards for real-time log analysis.
+This is a Docker-based ELK (Elasticsearch, Logstash, Kibana) stack deployment for centralized log collection and monitoring
+of Senzing applications across multiple machines. The stack collects GELF logs from remote Docker containers via UDP
+and provides pre-configured Kibana dashboards for real-time log analysis.
 
 ## Architecture
 
@@ -20,6 +22,7 @@ All services run in the `senzing` Docker network and use the `json-file` logging
 ## Common Commands
 
 ### Deployment
+
 ```bash
 # Start all services
 docker compose -f kibana.yaml up -d
@@ -35,6 +38,7 @@ docker compose -f kibana.yaml down -v
 ```
 
 ### Monitoring
+
 ```bash
 # View all logs
 docker compose -f kibana.yaml logs
@@ -56,6 +60,7 @@ curl http://192.168.2.100:5601/api/status
 ```
 
 ### Restart Services
+
 ```bash
 # Restart all services
 docker compose -f kibana.yaml restart
@@ -80,6 +85,7 @@ The "Senzing Dashboard" includes three saved searches embedded in NDJSON format 
 3. **All Recent Logs**: No filter, shows all logs sorted by timestamp descending
 
 All searches use custom column widths:
+
 - `container_name`: 150px
 - `source_host`: 120px
 - `@timestamp` and `message`: auto-sizing
@@ -87,6 +93,7 @@ All searches use custom column widths:
 ### Environment Variables
 
 Available overrides in `kibana.yaml`:
+
 - `SENZING_DOCKER_IMAGE_VERSION_ELASTICSEARCH` (default: 9.3.0)
 - `SENZING_DOCKER_IMAGE_VERSION_LOGSTASH` (default: 9.3.0)
 - `SENZING_DOCKER_IMAGE_VERSION_KIBANA` (default: 9.3.0)
@@ -96,6 +103,7 @@ Available overrides in `kibana.yaml`:
 ### Memory Configuration
 
 Current heap settings:
+
 - Elasticsearch: `-Xmx512m -Xms512m`
 - Logstash: `-Xmx256m -Xms256m`
 
@@ -110,12 +118,14 @@ Current heap settings:
 ### Logstash Pipeline
 
 The Logstash configuration is embedded in `kibana.yaml` as a command-line string:
+
 - Input: GELF on port 12201
 - Output: Elasticsearch with daily indices, data streams disabled
 
 ### Dashboard Import Process
 
 The `kibana-dashboard` service:
+
 1. Waits for Kibana to respond to `/api/status`
 2. Creates temporary NDJSON file with 5 saved objects (index pattern, 3 searches, 1 dashboard)
 3. Imports via Kibana's `/api/saved_objects/_import` endpoint
@@ -181,7 +191,7 @@ The repository includes comprehensive documentation:
 
 ## File Structure
 
-```
+```text
 .
 ├── .github/
 │   └── workflows/
@@ -204,16 +214,19 @@ The repository includes comprehensive documentation:
 
 To update saved searches or dashboard layout:
 
-1. Make changes via Kibana UI (http://192.168.2.100:5601)
+1. Make changes via Kibana UI (<http://192.168.2.100:5601>)
 2. Export updated objects:
+
    ```bash
    curl -X POST "http://192.168.2.100:5601/api/saved_objects/_export" \
      -H "kbn-xsrf: true" \
      -H "Content-Type: application/json" \
      -d '{"type": "dashboard", "includeReferencesDeep": true}'
    ```
+
 3. Update the NDJSON content in `kibana.yaml` lines 81-88
 4. Redeploy dashboard importer:
+
    ```bash
    docker compose -f kibana.yaml restart kibana-dashboard
    ```

@@ -78,6 +78,7 @@ docker stats --no-stream
    ```
 
 4. Check Elasticsearch logs:
+
    ```bash
    docker compose -f kibana.yaml logs elasticsearch
    ```
@@ -114,6 +115,7 @@ docker stats --no-stream
    ```
 
 4. Check Logstash logs:
+
    ```bash
    docker compose -f kibana.yaml logs logstash
    ```
@@ -150,6 +152,7 @@ docker stats --no-stream
    ```
 
 4. Check Kibana logs:
+
    ```bash
    docker compose -f kibana.yaml logs kibana
    ```
@@ -183,6 +186,7 @@ docker stats --no-stream
    ```
 
 4. Verify index pattern exists:
+
    ```bash
    curl -s "http://localhost:5601/api/saved_objects/index-pattern/868351a0-e102-11ec-abf1-5991269c961f" | jq
    ```
@@ -230,6 +234,7 @@ docker stats --no-stream
    ```
 
 5. Check if logs are in Elasticsearch:
+
    ```bash
    curl -s "http://localhost:9200/log-*/_search?size=10&sort=@timestamp:desc&pretty"
    ```
@@ -261,6 +266,7 @@ docker stats --no-stream
    - Select time field: `@timestamp`
 
 4. Send test log to create initial index:
+
    ```bash
    echo '{"version":"1.1","host":"test","short_message":"Initial test","level":6,"_container_name":"test"}' | \
      nc -u localhost 12201
@@ -366,6 +372,7 @@ docker stats --no-stream
    ```
 
 5. Increase heap memory (if resources available):
+
    ```yaml
    # In kibana.yaml, update Elasticsearch service
    environment:
@@ -409,6 +416,7 @@ docker stats --no-stream
    ```
 
 4. Monitor Java heap usage:
+
    ```bash
    curl -s "http://localhost:9200/_nodes/stats/jvm?pretty"
    ```
@@ -449,6 +457,7 @@ docker stats --no-stream
    ```
 
 5. Verify Docker port mapping:
+
    ```bash
    docker port senzing-kibana
    ```
@@ -482,6 +491,7 @@ docker stats --no-stream
    ```
 
 4. Verify no NAT/routing issues:
+
    ```bash
    traceroute 192.168.2.100
    ```
@@ -524,6 +534,7 @@ docker stats --no-stream
    ```
 
 4. Configure disk watermarks:
+
    ```bash
    curl -X PUT "http://localhost:9200/_cluster/settings" \
      -H 'Content-Type: application/json' \
@@ -596,6 +607,7 @@ docker stats --no-stream
 3. Reduce number of indices/data volume
 
 4. Enable heap dumps for analysis:
+
    ```yaml
    environment:
      ES_JAVA_OPTS: "-Xmx512m -Xms512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
@@ -637,8 +649,8 @@ netstat -tulpn > ports.txt
 
 - **GitHub Issues**: Report bugs or request features at the repository
 - **Documentation**: Check README.md, CONFIGURATION.md, and SECURITY.md
-- **Elasticsearch Forums**: https://discuss.elastic.co
-- **Docker Forums**: https://forums.docker.com
+- **Elasticsearch Forums**: <https://discuss.elastic.co>
+- **Docker Forums**: <https://forums.docker.com>
 
 ### Debug Mode
 

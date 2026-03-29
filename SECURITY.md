@@ -165,7 +165,8 @@ KIBANA_SYSTEM_PASSWORD=<your-secure-password>
 ```
 
 Add to `.gitignore`:
-```
+
+```text
 .env
 certs/
 ```
@@ -176,39 +177,40 @@ certs/
 
 1. Generate Kibana certificates:
 
-```bash
-# Generate Kibana certificate
-docker run --rm -v $(pwd)/certs:/certs \
-  elasticsearch:9.3.0 \
-  bin/elasticsearch-certutil cert \
-  --name senzing-kibana \
-  --dns senzing-kibana,localhost,192.168.2.100 \
-  --out /certs/kibana.p12 \
-  --pass ""
+   ```bash
+   # Generate Kibana certificate
+   docker run --rm -v $(pwd)/certs:/certs \
+     elasticsearch:9.3.0 \
+     bin/elasticsearch-certutil cert \
+     --name senzing-kibana \
+     --dns senzing-kibana,localhost,192.168.2.100 \
+     --out /certs/kibana.p12 \
+     --pass ""
 
-# Convert to PEM format
-openssl pkcs12 -in certs/kibana.p12 -out certs/kibana.crt -clcerts -nokeys -passin pass:
-openssl pkcs12 -in certs/kibana.p12 -out certs/kibana.key -nocerts -nodes -passin pass:
-```
+   # Convert to PEM format
+   openssl pkcs12 -in certs/kibana.p12 -out certs/kibana.crt -clcerts -nokeys -passin pass:
+   openssl pkcs12 -in certs/kibana.p12 -out certs/kibana.key -nocerts -nodes -passin pass:
+   ```
 
 2. Update Kibana configuration:
 
-```yaml
-kibana:
-  environment:
-    SERVER_SSL_ENABLED: 'true'
-    SERVER_SSL_CERTIFICATE: /usr/share/kibana/config/certs/kibana.crt
-    SERVER_SSL_KEY: /usr/share/kibana/config/certs/kibana.key
-  ports:
-    - 5601:5601
-  volumes:
-    - ./certs:/usr/share/kibana/config/certs:ro
-```
+   ```yaml
+   kibana:
+     environment:
+       SERVER_SSL_ENABLED: 'true'
+       SERVER_SSL_CERTIFICATE: /usr/share/kibana/config/certs/kibana.crt
+       SERVER_SSL_KEY: /usr/share/kibana/config/certs/kibana.key
+     ports:
+       - 5601:5601
+     volumes:
+       - ./certs:/usr/share/kibana/config/certs:ro
+   ```
 
 3. Access Kibana via HTTPS:
-```
-https://192.168.2.100:5601
-```
+
+   ```text
+   https://192.168.2.100:5601
+   ```
 
 ### Enable TLS for GELF Input
 
@@ -638,6 +640,7 @@ trivy image elasticsearch:9.3.0
 ### Emergency Contacts
 
 Maintain a security contact list:
+
 - Security team lead
 - System administrators
 - Legal/compliance team
