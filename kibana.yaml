@@ -87,20 +87,33 @@ services:
         {"exportedCount":5,"missingRefCount":0,"missingReferences":[]}
         EOF
 
-        # Retry import until successful
+        # Retry import until successful, validating response body
         while true; do
-          status_code=$(curl -X POST "http://senzing-kibana:5601/api/saved_objects/_import" \
+          response=$(curl -X POST "http://senzing-kibana:5601/api/saved_objects/_import?overwrite=true" \
             -H "kbn-xsrf: true" \
             --form file=@/tmp/kibana-objects.ndjson \
-            --write-out "%{http_code}" \
-            --silent --output /dev/null)
+            --write-out "\n%{http_code}" \
+            --silent)
+
+          status_code=$(echo "$$response" | tail -1)
+          body=$(echo "$$response" | sed '$$d')
 
           if [ "$$status_code" != "200" ]; then
-            echo "Import failed with status $$status_code, retrying in 1 second..."
+            echo "Import HTTP $$status_code, retrying in 1 second..."
             sleep 1
-          else
+            continue
+          fi
+
+          # Check that the response body reports success
+          if echo "$$body" | grep -q '"success":true'; then
             echo "Dashboard import successful"
+            echo "$$body"
             exit 0
+          else
+            echo "Import returned 200 but body indicates failure:"
+            echo "$$body"
+            echo "Retrying in 2 seconds..."
+            sleep 2
           fi
         done
     image: curlimages/curl:${SENZING_DOCKER_IMAGE_VERSION_CURLIMAGES_CURL:-latest}

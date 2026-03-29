@@ -122,14 +122,22 @@ jobs:
           fi
           echo "Dashboard imported successfully"
 
+      - name: List imported saved objects
+        run: |
+          echo "Listing all dashboards after import:"
+          curl -s -H "kbn-xsrf: true" \
+            "http://localhost:5601/api/saved_objects/_find?type=dashboard&per_page=20" | \
+            python3 -m json.tool || true
+
       - name: Verify dashboard exists
         run: |
           # Retry loop: Kibana may need time to make the saved object
           # queryable after the import API returns success
-          timeout=30
+          timeout=60
           elapsed=0
           while true; do
-            response=$(curl -s "http://localhost:5601/api/saved_objects/dashboard/e37f3b7d-3081-41e4-a9af-01b97c340e14")
+            response=$(curl -s -H "kbn-xsrf: true" \
+              "http://localhost:5601/api/saved_objects/dashboard/e37f3b7d-3081-41e4-a9af-01b97c340e14")
             if echo "$response" | grep -q '"title":"Senzing Dashboard"'; then
               echo "Senzing Dashboard verified"
               exit 0
@@ -137,7 +145,13 @@ jobs:
             elapsed=$((elapsed + 5))
             if [ $elapsed -gt $timeout ]; then
               echo "Senzing Dashboard not found after ${timeout}s"
+              echo "Last response:"
               echo "$response"
+              echo ""
+              echo "All dashboards in Kibana:"
+              curl -s -H "kbn-xsrf: true" \
+                "http://localhost:5601/api/saved_objects/_find?type=dashboard&per_page=20" | \
+                python3 -m json.tool || true
               exit 1
             fi
             echo "Dashboard not yet queryable, retrying... (${elapsed}s/${timeout}s)"
