@@ -47,12 +47,14 @@ docker stats --no-stream
 ### Elasticsearch Won't Start
 
 **Symptoms:**
+
 - Container exits immediately or enters restart loop
 - Error: "max virtual memory areas vm.max_map_count [65530] is too low"
 
 **Solutions:**
 
 1. Increase vm.max_map_count (Linux/macOS):
+
    ```bash
    # Temporary (until reboot)
    sudo sysctl -w vm.max_map_count=262144
@@ -63,12 +65,14 @@ docker stats --no-stream
    ```
 
 2. Check available disk space:
+
    ```bash
    df -h
    # Elasticsearch needs at least 10GB free
    ```
 
 3. Verify permissions on data volume:
+
    ```bash
    docker volume inspect elasticsearch-data
    ```
@@ -81,6 +85,7 @@ docker stats --no-stream
 ### Logstash Won't Start
 
 **Symptoms:**
+
 - Configuration syntax errors
 - Cannot connect to Elasticsearch
 - Port 12201 already in use
@@ -88,11 +93,13 @@ docker stats --no-stream
 **Solutions:**
 
 1. Validate configuration:
+
    ```bash
    docker compose -f kibana.yaml config
    ```
 
 2. Check port availability:
+
    ```bash
    # Check if port 12201 is already in use
    sudo lsof -i :12201
@@ -101,6 +108,7 @@ docker stats --no-stream
    ```
 
 3. Verify Elasticsearch is running:
+
    ```bash
    curl http://localhost:9200
    ```
@@ -113,6 +121,7 @@ docker stats --no-stream
 ### Kibana Won't Start
 
 **Symptoms:**
+
 - Cannot connect to Elasticsearch
 - Timeout waiting for Elasticsearch
 - Port 5601 already in use
@@ -120,16 +129,19 @@ docker stats --no-stream
 **Solutions:**
 
 1. Verify Elasticsearch is healthy:
+
    ```bash
    curl http://localhost:9200/_cluster/health
    ```
 
 2. Check port availability:
+
    ```bash
    sudo lsof -i :5601
    ```
 
 3. Increase Kibana startup timeout:
+
    ```yaml
    # Add to kibana service in kibana.yaml
    environment:
@@ -145,6 +157,7 @@ docker stats --no-stream
 ### Dashboard Importer Fails
 
 **Symptoms:**
+
 - Exit code not 0
 - Dashboard not visible in Kibana
 - Import errors in logs
@@ -152,16 +165,19 @@ docker stats --no-stream
 **Solutions:**
 
 1. Check importer logs:
+
    ```bash
    docker compose -f kibana.yaml logs kibana-dashboard
    ```
 
 2. Verify Kibana is ready:
+
    ```bash
    curl http://localhost:5601/api/status
    ```
 
 3. Manually re-run the import:
+
    ```bash
    docker compose -f kibana.yaml restart kibana-dashboard
    ```
@@ -176,6 +192,7 @@ docker stats --no-stream
 ### Remote Machine Configuration Issues
 
 **Symptoms:**
+
 - No logs visible in Kibana
 - GELF messages not reaching Logstash
 - Empty indices
@@ -183,6 +200,7 @@ docker stats --no-stream
 **Solutions:**
 
 1. Test GELF connectivity from remote machine:
+
    ```bash
    # From remote machine
    echo '{"version":"1.1","host":"test","short_message":"Test message","level":6}' | \
@@ -190,11 +208,13 @@ docker stats --no-stream
    ```
 
 2. Verify message received in Logstash:
+
    ```bash
    docker compose -f kibana.yaml logs logstash | grep -i "test message"
    ```
 
 3. Check firewall rules:
+
    ```bash
    # On ELK server
    sudo iptables -L -n | grep 12201
@@ -203,6 +223,7 @@ docker stats --no-stream
    ```
 
 4. Verify Docker container GELF configuration:
+
    ```bash
    # On remote machine
    docker inspect <container-name> | grep -A5 LogConfig
@@ -216,17 +237,20 @@ docker stats --no-stream
 ### Index Pattern Not Found
 
 **Symptoms:**
-- "No indices match pattern log*"
+
+- "No indices match pattern log\*"
 - Dashboard shows "No results found"
 
 **Solutions:**
 
 1. Verify indices exist:
+
    ```bash
    curl http://localhost:9200/_cat/indices?v
    ```
 
 2. Check index pattern in Kibana:
+
    ```bash
    curl -s "http://localhost:5601/api/saved_objects/index-pattern/868351a0-e102-11ec-abf1-5991269c961f" | jq
    ```
@@ -249,6 +273,7 @@ docker stats --no-stream
 ### Dashboard Not Loading
 
 **Symptoms:**
+
 - 404 error on dashboard
 - Empty dashboard page
 - Missing visualizations
@@ -256,11 +281,13 @@ docker stats --no-stream
 **Solutions:**
 
 1. Verify dashboard exists:
+
    ```bash
    curl -s "http://localhost:5601/api/saved_objects/dashboard/e37f3b7d-3081-41e4-a9af-01b97c340e14" | jq
    ```
 
 2. Check saved searches exist:
+
    ```bash
    # Error Logs search
    curl -s "http://localhost:5601/api/saved_objects/search/1f211439-b386-411b-872a-833126886750" | jq
@@ -273,6 +300,7 @@ docker stats --no-stream
    ```
 
 3. Re-import dashboard:
+
    ```bash
    docker compose -f kibana.yaml restart kibana-dashboard
    ```
@@ -284,6 +312,7 @@ docker stats --no-stream
 ### Saved Searches Show No Data
 
 **Symptoms:**
+
 - Dashboard loads but panels are empty
 - "No results found" in search panels
 
@@ -294,13 +323,14 @@ docker stats --no-stream
    - Try "Last 24 hours" or "Last 7 days"
 
 2. Verify data exists for the search query:
+
    ```bash
    # Test error logs query
    curl -s "http://localhost:9200/log-*/_search?q=message:*error*&size=1" | jq .hits.total
    ```
 
 3. Refresh field list:
-   - Go to Stack Management → Index Patterns → log*
+   - Go to Stack Management → Index Patterns → log\*
    - Click refresh button
 
 ## Performance Problems
@@ -308,6 +338,7 @@ docker stats --no-stream
 ### Slow Query Performance
 
 **Symptoms:**
+
 - Dashboard takes long to load
 - Search timeouts
 - High CPU usage
@@ -315,6 +346,7 @@ docker stats --no-stream
 **Solutions:**
 
 1. Check Elasticsearch cluster health:
+
    ```bash
    curl -s "http://localhost:9200/_cluster/health?pretty"
    ```
@@ -322,11 +354,13 @@ docker stats --no-stream
 2. Reduce time range being queried
 
 3. Check for unassigned shards:
+
    ```bash
    curl -s "http://localhost:9200/_cat/shards?v" | grep UNASSIGNED
    ```
 
 4. Monitor slow queries:
+
    ```bash
    curl -s "http://localhost:9200/_nodes/stats/indices/search?pretty"
    ```
@@ -335,12 +369,13 @@ docker stats --no-stream
    ```yaml
    # In kibana.yaml, update Elasticsearch service
    environment:
-     ES_JAVA_OPTS: "-Xmx1g -Xms1g"  # Increase from 512m
+     ES_JAVA_OPTS: "-Xmx1g -Xms1g" # Increase from 512m
    ```
 
 ### High Memory Usage
 
 **Symptoms:**
+
 - Out of memory errors
 - Container killed by OOM killer
 - System becomes unresponsive
@@ -348,11 +383,13 @@ docker stats --no-stream
 **Solutions:**
 
 1. Check current memory usage:
+
    ```bash
    docker stats
    ```
 
 2. Reduce heap sizes if system has limited memory:
+
    ```yaml
    # For systems with <4GB RAM
    elasticsearch:
@@ -365,6 +402,7 @@ docker stats --no-stream
    ```
 
 3. Implement index lifecycle management:
+
    ```bash
    # Delete old indices
    curl -X DELETE "http://localhost:9200/log-2024.01.*"
@@ -380,27 +418,32 @@ docker stats --no-stream
 ### Cannot Access Kibana UI
 
 **Symptoms:**
+
 - Connection refused on port 5601
 - Timeout connecting to Kibana
 
 **Solutions:**
 
 1. Verify Kibana is running:
+
    ```bash
    docker compose -f kibana.yaml ps kibana
    ```
 
 2. Check if port is listening:
+
    ```bash
    netstat -tulpn | grep 5601
    ```
 
 3. Test from localhost first:
+
    ```bash
    curl http://localhost:5601
    ```
 
 4. Check firewall rules:
+
    ```bash
    sudo iptables -L -n | grep 5601
    ```
@@ -413,23 +456,27 @@ docker stats --no-stream
 ### GELF Messages Not Reaching Logstash
 
 **Symptoms:**
+
 - Remote containers logging to GELF but logs not appearing
 - No errors in container logs
 
 **Solutions:**
 
 1. Test UDP connectivity:
+
    ```bash
    # From remote machine
    nc -u -v -z 192.168.2.100 12201
    ```
 
 2. Capture packets on ELK server:
+
    ```bash
    sudo tcpdump -i any udp port 12201 -n
    ```
 
 3. Check Logstash input statistics:
+
    ```bash
    curl -s "http://localhost:9600/_node/stats/pipelines?pretty" | jq '.pipelines.main.plugins.inputs'
    ```
@@ -444,6 +491,7 @@ docker stats --no-stream
 ### Elasticsearch Disk Full
 
 **Symptoms:**
+
 - Error: "flood stage disk watermark exceeded"
 - Indices become read-only
 - Cannot index new documents
@@ -451,12 +499,14 @@ docker stats --no-stream
 **Solutions:**
 
 1. Check disk usage:
+
    ```bash
    df -h
    curl -s "http://localhost:9200/_cat/allocation?v"
    ```
 
 2. Delete old indices:
+
    ```bash
    # List indices by size
    curl -s "http://localhost:9200/_cat/indices?v&s=store.size:desc"
@@ -466,6 +516,7 @@ docker stats --no-stream
    ```
 
 3. Reset read-only index block:
+
    ```bash
    curl -X PUT "http://localhost:9200/_all/_settings" \
      -H 'Content-Type: application/json' \
@@ -488,17 +539,20 @@ docker stats --no-stream
 ### Docker Volume Full
 
 **Symptoms:**
+
 - Cannot write to volume
 - Container fails to start
 
 **Solutions:**
 
 1. Check volume size:
+
    ```bash
    docker system df -v
    ```
 
 2. Prune unused Docker data:
+
    ```bash
    docker system prune -a --volumes
    ```
@@ -510,6 +564,7 @@ docker stats --no-stream
 ### Java Heap Space Errors
 
 **Symptoms:**
+
 - OutOfMemoryError in logs
 - Services crash randomly
 - Slow performance
@@ -517,6 +572,7 @@ docker stats --no-stream
 **Solutions:**
 
 1. Check heap usage:
+
    ```bash
    # Elasticsearch
    curl -s "http://localhost:9200/_nodes/stats/jvm?pretty" | jq '.nodes[].jvm.mem'
@@ -526,6 +582,7 @@ docker stats --no-stream
    ```
 
 2. Increase heap size (ensure host has enough RAM):
+
    ```yaml
    elasticsearch:
      environment:
@@ -604,6 +661,7 @@ kibana:
 ```
 
 Then restart services:
+
 ```bash
 docker compose -f kibana.yaml down
 docker compose -f kibana.yaml up -d
