@@ -187,7 +187,7 @@ The repository includes comprehensive documentation:
 - **SECURITY.md**: Production security hardening guide
 - **TROUBLESHOOTING.md**: Detailed problem-solving guide
 - **CONTRIBUTING.md**: Guidelines for contributors
-- **.claude/CLAUDE.md**: This file (developer guide for Claude Code)
+- **CLAUDE.md**: This file (developer guide for Claude Code)
 
 ## File Structure
 
@@ -196,8 +196,7 @@ The repository includes comprehensive documentation:
 ├── .github/
 │   └── workflows/
 │       └── ci.yml            # GitHub Actions CI pipeline
-├── .claude/
-│   └── CLAUDE.md             # This file (developer guide)
+├── CLAUDE.md                 # This file (developer guide)
 ├── kibana.yaml               # Docker Compose configuration with embedded dashboard
 ├── .yamllint                 # YAML linting configuration
 ├── .markdownlint.json        # Markdown linting configuration
