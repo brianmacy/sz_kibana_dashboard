@@ -95,8 +95,8 @@ services:
             --write-out "%{http_code}" \
             --silent --output /dev/null)
 
-          if [[ "$status_code" -ne 200 ]]; then
-            echo "Import failed with status $status_code, retrying in 1 second..."
+          if [ "$$status_code" != "200" ]; then
+            echo "Import failed with status $$status_code, retrying in 1 second..."
             sleep 1
           else
             echo "Dashboard import successful"

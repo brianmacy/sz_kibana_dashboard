@@ -113,8 +113,8 @@ jobs:
             elapsed=$((elapsed + 2))
           done
 
-          # Check exit code
-          exit_code=$(docker compose -f kibana.yaml ps kibana-dashboard --format json | grep -o '"ExitCode":[0-9]*' | cut -d: -f2)
+          # Check exit code using docker inspect for stable output format
+          exit_code=$(docker inspect senzing-kibana-dashboard --format '{{.State.ExitCode}}')
           if [ "$exit_code" != "0" ]; then
             echo "Dashboard import failed with exit code $exit_code"
             docker compose -f kibana.yaml logs kibana-dashboard
