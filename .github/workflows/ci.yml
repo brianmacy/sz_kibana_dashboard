@@ -124,14 +124,25 @@ jobs:
 
       - name: Verify dashboard exists
         run: |
-          # Check if Senzing Dashboard exists
-          response=$(curl -s "http://localhost:5601/api/saved_objects/dashboard/e37f3b7d-3081-41e4-a9af-01b97c340e14")
-          if ! echo "$response" | grep -q '"title":"Senzing Dashboard"'; then
-            echo "Senzing Dashboard not found"
-            echo "$response"
-            exit 1
-          fi
-          echo "Senzing Dashboard verified"
+          # Retry loop: Kibana may need time to make the saved object
+          # queryable after the import API returns success
+          timeout=30
+          elapsed=0
+          while true; do
+            response=$(curl -s "http://localhost:5601/api/saved_objects/dashboard/e37f3b7d-3081-41e4-a9af-01b97c340e14")
+            if echo "$response" | grep -q '"title":"Senzing Dashboard"'; then
+              echo "Senzing Dashboard verified"
+              exit 0
+            fi
+            elapsed=$((elapsed + 5))
+            if [ $elapsed -gt $timeout ]; then
+              echo "Senzing Dashboard not found after ${timeout}s"
+              echo "$response"
+              exit 1
+            fi
+            echo "Dashboard not yet queryable, retrying... (${elapsed}s/${timeout}s)"
+            sleep 5
+          done
 
       - name: Test GELF log ingestion
         run: |
